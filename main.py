@@ -1,4 +1,4 @@
-import requests, sys, json
+import requests, sys, json, traceback
 from bs4 import BeautifulSoup as bs
 
 everylink = [] # of loaded
@@ -6,31 +6,30 @@ endLists = []  # of new links
 
 def main():
     getReady()
-    parseEndLists(endLists) # parse from input only, no repeats here 
-
+    parseEndLists(endLists) # parse from input only, no repeats are here
+    # add list2list parse feature and check errors :
+    # run all 'errors' thought parsePeople and parseEndLists
+    # add deleting at the end 
     print "close session"
+    saveProcessData()
+
+
+def saveProcessData():
     # save the process data
     f = open("indexing.txt", "w")
     f.write(json.dumps(everylink))
     f.close()
 
 
-# add list2list parse feature 
-
 def parseEndLists(List):
     headers = {"User-agent":"Mozilla/5.0"}
     endpoint = "http://en.wikipedia.org"
-
-    # demo file
-    f = open("output/hrefs.txt", "w") 
-    f.close()
-
     j = 0
     for link in List:
-        if link != "" and link not in everylink["input"]: 
+        if len(link) > 0 and link not in everylink["input"]: 
             r = requests.get(link, headers=headers)
             soup = bs(r.text)
-            hrefs = soup.find_all("a")
+            hrefs = soup.find_all("a") # any optimisation from here to endpoin? 
             print "\n", len(hrefs), "hrefs\n"
             for hr in hrefs:
                 sthr = str(hr)                    
@@ -41,70 +40,87 @@ def parseEndLists(List):
                         if sthr[i] == '"':
                             s1 = i
                             break
-                        
                     if s1 > s0:
-                        # the endpoint to Article page
+                        # the endpoint to Article page 
                         sthr = endpoint + sthr[s0:s1]
-
                         if sthr not in everylink["pages"]:
-                            # btw may be in 'errors' 
-
-                            # save for debug 
-                            f = open("output/hrefs.txt", "a") 
-                            f.write(sthr + "\n")
-                            f.close()
+                            # btw STHR can be in 'errors' 
                             if parsePeople(sthr):
-                                # index this 
                                 everylink["pages"].append(sthr)
-                                print j
+                                if sthr in everylink["errors"]:
+                                    # delete
+                                    everylink["errors"].remove(sthr)
+                                print "#####", j, "#####"
                                 j += 1
                             else:
                                 everylink["errors"].append(sthr)
-                                # do "check errors" step
-                                # if output isn't the same
-                                # (parsed some data/no error, no data) -
-                                # - delete from error-list
+                                # + do "check errors" step
+                            saveProcessData()
+                            
             # save link to source list 
             everylink["input"].append(link) 
-
     print "got data about", j, "people total"
     
 
+# 1, edit parsing roles/ occupations
+# 2, find out how to parse 1st paragraph
 def parsePeople(link):
-    # load and parse link
     template = {}
     headers = {"User-agent":"Mozilla/5.0"}
     try:
         r = requests.get(link, headers=headers)
         soup = bs(r.text)
-
+        # parse
         allclasses = ["fn", "nickname", "bday", "dday deathdate", "role"]
         for aclass in allclasses:
             if aclass == "role":
-                fn = soup.find_all("td", class_ = aclass)
+                tag = "td"
             else:
-                fn = soup.find_all("span", class_= aclass)
-                
-            if len(fn) > 0:
-                for item in fn:
-                    f = item.contents
-                    if f[0].find("<") == -1 and f[0].find(">") == -1:
-                        template[aclass] = f[0]
-        # now template is fulled 
+                tag = "span"
+            group = soup.find_all(tag, class_ = aclass)
+            if len(group) > 0:
+                #print "----", aclass, "----"
+                forsave = ""
+                for item in group:
+                    f = str(item)
+                    a0 = f.find("<")
+                    a1 = f.find(">")
+                    while a0 != -1:
+                        a0 = f.find("<")
+                        a1 = f.find(">")
+                        t = f[a0:a1+1]
+                        f = f.replace(t, "")
+                    #print "f2:", f
+                    if aclass == "role":
+                        forsave += f.replace("\n", " ") + " "
+                    else:
+                        forsave = f.replace("\n", " ")
+                        break
+                        # I need only one non-role report
+                print aclass, "|", forsave
+                template[aclass] = forsave
+        # now template is fulled, save to table
         if len(template) > 1:
+            #print template
             template["link"] = link
             try:
-                ofile = open("output/output.csv", "a")
+                # save to existing file
+                ofile = open("output/output" + str(len(everylink["input"])) + ".csv", "a")
                 lis = generateCSVstring(template)
                 ofile.write(lis)
                 ofile.close()
                 return True # 1
             except:
-                #print "Error in output file"
-                return False # 2 
-        
+                # create file and save
+                ofile = open("output/output" + str(len(everylink["input"])) + ".csv", "w")
+                lis = generateCSVstring(template)
+                ofile.write(lis)
+                ofile.close()
+                return True # 1
     except Exception as ex:
-        print "(parse r)", str(ex)
+        print "(parse r)"
+        print format_exception(ex)
+        print "--"*25
         return False # 3
 
 
@@ -120,8 +136,6 @@ def getReady():
     except:
         print "File 'lists.txt' not found"
         sys.exit("Create one")
-    #out = open("output/output.csv", "w")
-    #out.close()
     
     # open file for indexing system
     try:
@@ -138,7 +152,7 @@ def getReady():
                 
 
 def generateCSVstring(dic):
-    # prepare CSV row here
+    # prepare a table row for .CSV here
     st = ""
     br = "; "
     em = " "
@@ -179,6 +193,20 @@ def generateCSVstring(dic):
         pass
 
     return st + "\n"
+
+
+# i like this
+def format_exception(e):
+    exception_list = traceback.format_stack()
+    exception_list = exception_list[:-2]
+    exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
+    exception_list.extend(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
+
+    exception_str = "Traceback (most recent call last):\n"
+    exception_str += "".join(exception_list)
+    # Removing the last \n
+    exception_str = exception_str[:-1]
+    return exception_str
             
 
 main()
