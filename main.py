@@ -6,12 +6,18 @@ endLists = []  # of new links
 
 def main():
     getReady()
-    parseEndLists(endLists) # parse from input only, no repeats are here
-    # add list2list parse feature and check errors :
-    # run all 'errors' thought parsePeople and parseEndLists
-    # add deleting at the end 
-    print "close session"
-    saveProcessData()
+    # input links
+    parseEndLists(endLists) 
+    print "close session\ncheck", len(everylink["errors"]), "error links"
+    # repeat errors 
+    en = 1
+    for erlink in everylink["errors"]:
+        if parsePeople(erlink):
+            everylink["pages"].append(erlink)
+            print "--", en, "--"
+        en += 1
+        everylink["errors"].remove(erlink)
+        saveProcessData()
 
 
 def saveProcessData():
@@ -48,21 +54,17 @@ def parseEndLists(List):
                             if parsePeople(sthr):
                                 everylink["pages"].append(sthr)
                                 if sthr in everylink["errors"]:
-                                    # delete
                                     everylink["errors"].remove(sthr)
-                                print "#####", j, "#####"
+                                print "-----", j, "-----"
                                 j += 1
                             else:
                                 everylink["errors"].append(sthr)
-                                # + do "check errors" step
                             saveProcessData()
-                            
             # save link to source list 
             everylink["input"].append(link) 
     print "got data about", j, "people total"
     
 
-# 1, edit parsing roles/ occupations
 # 2, find out how to parse 1st paragraph
 def parsePeople(link):
     template = {}
@@ -97,11 +99,10 @@ def parsePeople(link):
                         forsave = f.replace("\n", " ")
                         break
                         # I need only one non-role report
-                print aclass, "|", forsave
+                #print aclass, "|", forsave
                 template[aclass] = forsave
-        # now template is fulled, save to table
         if len(template) > 1:
-            #print template
+            # now template is fulled, save to table
             template["link"] = link
             try:
                 # save to existing file
