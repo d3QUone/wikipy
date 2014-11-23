@@ -145,8 +145,9 @@ def getReady():
         everylink = json.loads(data)
     except:
         # create empty file w/template
+        everylink = {"pages":[], "errors":[], "input":[]}
         f = open("indexing.txt", "w")
-        f.write(json.dumps({"pages":[], "errors":[], "input":[]}))
+        f.write(json.dumps(everylink))
         f.close()
         print "Indexing system was set up, don't delete 'indexing.txt'"
                 
