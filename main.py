@@ -6,9 +6,9 @@ endLists = []  # of new links
 
 def main():
     getReady()
-    # input links
-    parseEndLists(endLists) 
+    parseEndLists(endLists)
     print "close session\ncheck", len(everylink["errors"]), "error links"
+    '''
     # repeat errors 
     en = 1
     for erlink in everylink["errors"]:
@@ -18,6 +18,7 @@ def main():
         en += 1
         everylink["errors"].remove(erlink)
         saveProcessData()
+    '''
 
 
 def saveProcessData():
@@ -35,7 +36,8 @@ def parseEndLists(List):
         if len(link) > 0 and link not in everylink["input"]: 
             r = requests.get(link, headers=headers)
             soup = bs(r.text)
-            hrefs = soup.find_all("a") # any optimisation from here to endpoin? 
+            hrefs = soup.find_all("a")
+            # any optimisation from here to endpoin? 
             print "\n", len(hrefs), "hrefs\n"
             for hr in hrefs:
                 sthr = str(hr)                    
@@ -60,7 +62,7 @@ def parseEndLists(List):
                             else:
                                 everylink["errors"].append(sthr)
                             saveProcessData()
-            # save link to source list 
+            # index link into source list 
             everylink["input"].append(link) 
     print "got data about", j, "people total"
     
@@ -70,9 +72,9 @@ def parsePeople(link):
     template = {}
     headers = {"User-agent":"Mozilla/5.0"}
     try:
+        # parse
         r = requests.get(link, headers=headers)
         soup = bs(r.text)
-        # parse
         allclasses = ["fn", "nickname", "bday", "dday deathdate", "role"]
         for aclass in allclasses:
             if aclass == "role":
@@ -101,8 +103,8 @@ def parsePeople(link):
                         # I need only one non-role report
                 #print aclass, "|", forsave
                 template[aclass] = forsave
+        # now template is fulled, save to table
         if len(template) > 1:
-            # now template is fulled, save to table
             template["link"] = link
             try:
                 # save to existing file
@@ -125,6 +127,7 @@ def parsePeople(link):
         return False # 3
 
 
+# load all datas
 def getReady():
     global endLists, everylink
     # open input file whith links and prepare target file for save
@@ -153,8 +156,8 @@ def getReady():
         print "Indexing system was set up, don't delete 'indexing.txt'"
                 
 
+# prepare a table row for .CSV here
 def generateCSVstring(dic):
-    # prepare a table row for .CSV here
     st = ""
     br = "; "
     em = " "
@@ -197,18 +200,18 @@ def generateCSVstring(dic):
     return st + "\n"
 
 
-# i like this
+# i like this!
 def format_exception(e):
     exception_list = traceback.format_stack()
     exception_list = exception_list[:-2]
     exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
     exception_list.extend(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
-
     exception_str = "Traceback (most recent call last):\n"
     exception_str += "".join(exception_list)
     # Removing the last \n
     exception_str = exception_str[:-1]
     return exception_str
-            
 
-main()
+           
+if __name__ == "__main__":
+    main()
