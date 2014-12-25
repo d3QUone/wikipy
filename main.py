@@ -1,15 +1,22 @@
+# -*- coding: utf-8 -*-
+
 import requests, sys, json, traceback
 from bs4 import BeautifulSoup as bs
+from datetime import datetime
 
 everylink = [] # of loaded
 endLists = []  # of new links 
 
 def main():
+    t = datetime.now()
+    print "started on " + str(t) + "\n"
     getReady()
+    print len(endLists), "links in input: "
     parseEndLists(endLists)
-    print "close session\ncheck", len(everylink["errors"]), "error links"
+    print "\nsession closed:\ncheck", len(everylink["errors"]), "error links"
+    print "\nspent " + str(datetime.now() - t) + " time"
     '''
-    # repeat errors 
+    # redo errors 
     en = 1
     for erlink in everylink["errors"]:
         if parsePeople(erlink):
@@ -21,53 +28,56 @@ def main():
     '''
 
 
-def saveProcessData():
-    # save the process data
-    f = open("indexing.txt", "w")
-    f.write(json.dumps(everylink))
-    f.close()
-
-
 def parseEndLists(List):
     headers = {"User-agent":"Mozilla/5.0"}
     endpoint = "http://en.wikipedia.org"
-    j = 0
     for link in List:
-        if len(link) > 0 and link not in everylink["input"]: 
-            r = requests.get(link, headers=headers)
-            soup = bs(r.text)
-            hrefs = soup.find_all("a")
-            # any optimisation from here to endpoin? 
-            print "\n", len(hrefs), "hrefs\n"
-            for hr in hrefs:
-                sthr = str(hr)                    
-                s0 = sthr.find("/wiki/")
-                if s0 != -1:                
-                    s1 = 0
-                    for i in range(s0, len(sthr)):
-                        if sthr[i] == '"':
-                            s1 = i
-                            break
-                    if s1 > s0:
-                        # the endpoint to Article page 
-                        sthr = endpoint + sthr[s0:s1]
-                        if sthr not in everylink["pages"]:
-                            # btw STHR can be in 'errors' 
-                            if parsePeople(sthr):
-                                everylink["pages"].append(sthr)
-                                if sthr in everylink["errors"]:
-                                    everylink["errors"].remove(sthr)
-                                print "-----", j, "-----"
-                                j += 1
-                            else:
-                                everylink["errors"].append(sthr)
-                            saveProcessData()
-            # index link into source list 
-            everylink["input"].append(link) 
-    print "got data about", j, "people total"
-    
+        if len(link) > 0:
+            print link
+            if link.decode("utf8") not in everylink["input"]: 
+                r = requests.get(link, headers=headers)
+                soup = bs(r.text)
+                hrefs = soup.find_all("a")
+                print "\n", len(hrefs), "hrefs on the page\n"
+                # any optimisation from here to endpoin?
+                j = 0
+                for hr in hrefs:
+                    sthr = str(hr)                    
+                    s0 = sthr.find("/wiki/")
+                    if s0 != -1:                
+                        s1 = 0
+                        for i in range(s0, len(sthr)):
+                            if sthr[i] == '"':
+                                s1 = i
+                                break
+                        if s1 > s0:
+                            # the endpoint to Article page 
+                            sthr = endpoint + sthr[s0:s1]
+                            if sthr not in everylink["pages"]:
+                                # btw STHR can be in 'errors' 
+                                if parsePeople(sthr):
+                                    everylink["pages"].append(sthr)
+                                    if sthr in everylink["errors"]:
+                                        everylink["errors"].remove(sthr)
+                                    print "-----", j, "-----"
+                                    j += 1
+                                else:
+                                    # pages with no data
+                                    everylink["errors"].append(sthr)
+                                saveProcessData()
+                print "saved data about", j, "people total"
+            # save the link to source-list 
+            everylink["input"].append(link)
 
-# 2, find out how to parse 1st paragraph
+
+# store processed links
+def saveProcessData():
+    f = open("indexing.txt", "w")
+    f.write(json.dumps(everylink))
+    f.close()
+            
+    
+# find out how to parse 1st paragraph
 def parsePeople(link):
     template = {}
     headers = {"User-agent":"Mozilla/5.0"}
@@ -127,35 +137,6 @@ def parsePeople(link):
         return False # 3
 
 
-# load all datas
-def getReady():
-    global endLists, everylink
-    # open input file whith links and prepare target file for save
-    try:
-        f = open("lists.txt", "r")
-        data = f.read()
-        f.close()
-        endLists = data.split("\n")
-        print len(endLists), "links in input"
-    except:
-        print "File 'lists.txt' not found"
-        sys.exit("Create one")
-    
-    # open file for indexing system
-    try:
-        f = open("indexing.txt", "r")
-        data = f.read()
-        f.close()
-        everylink = json.loads(data)
-    except:
-        # create empty file w/template
-        everylink = {"pages":[], "errors":[], "input":[]}
-        f = open("indexing.txt", "w")
-        f.write(json.dumps(everylink))
-        f.close()
-        print "Indexing system was set up, don't delete 'indexing.txt'"
-                
-
 # prepare a table row for .CSV here
 def generateCSVstring(dic):
     st = ""
@@ -196,12 +177,13 @@ def generateCSVstring(dic):
     except:
         st += em
         pass
-
+    
     return st + "\n"
 
 
-# i like this!
+# tracing the error in the caugth exception
 def format_exception(e):
+    print str(e) + " - given into traceback"
     exception_list = traceback.format_stack()
     exception_list = exception_list[:-2]
     exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
@@ -211,6 +193,34 @@ def format_exception(e):
     # Removing the last \n
     exception_str = exception_str[:-1]
     return exception_str
+
+
+# load all datas
+def getReady():
+    global endLists, everylink
+    # open input file whith links and prepare target file for save
+    try:
+        f = open("lists.txt", "r")
+        data = f.read()
+        f.close()
+        endLists = data.split("\n")
+    except:
+        print "File 'lists.txt' not found"
+        sys.exit(2)
+    
+    # open file for indexing system
+    try:
+        f = open("indexing.txt", "r")
+        data = f.read()
+        f.close()
+        everylink = json.loads(data)
+    except:
+        # create empty file w/template
+        everylink = {"pages":[], "errors":[], "input":[]}
+        f = open("indexing.txt", "w")
+        f.write(json.dumps(everylink))
+        f.close()
+        print "Indexing system was set up, don't delete 'indexing.txt'"
 
            
 if __name__ == "__main__":
