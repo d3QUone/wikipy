@@ -166,29 +166,18 @@ def parseTables(page_link):
     template = {}
     headers = {"User-agent":"Mozilla/5.0"}
     try:
+        pos = 0
         r = requests.get(page_link, headers = headers)
         soup = bs(r.text)
         all_tables = soup.find_all("table", class_ = "wikitable")
         print "---found {0} tables on the page---\n".format(len(all_tables))
         for table in all_tables:
             sub_soup = bs(str(table))
-            ths = sub_soup.find_all("th")
-            step = len(ths)
-            print "--current table has {0} columns--".format(step)
-
-            res = []
-            append = res.append
-            sub_res = []
-            sub_pend = sub_res.append
-            i = 0
             all_td = sub_soup.find_all("td")
+
+            sub_res = []
+            append = sub_res.append
             for td in all_td:
-                if i % step == 0:
-                    append(sub_res)
-                    print sub_res
-                    sub_res[:] = []
-                    print "--"*25
-                # returns raw text without html-tags
                 buf = str(td).replace("\n", " ").replace("&amp;", "&")
                 if "flagicon" in buf:
                     a = buf.find('href="')
@@ -197,17 +186,18 @@ def parseTables(page_link):
                     buf = buf[a+1:]
                     b = buf.find('"')
                     href = buf[:b]
-                    sub_pend(href)
+                    append(href)
                 else:
                     while buf.find("<") != -1 and buf.find(">") != -1:
                         a = buf.find("<")
                         b = buf.find(">")
                         buf = buf[:a] + buf[b+1:] 
-                    sub_pend(buf)
-                i += 1
-            print res
-            print "\n", "**"*30, "\n"
-            
+                    append(buf)
+            print sub_res
+            template[pos] = sub_res
+            pos += 1
+            print "\n", "--"*35, "\n"
+        print "total res:", template
     except Exception as ex:
         print "(parseTables, r)", format_exception(ex)
         print "--"*25
@@ -265,4 +255,4 @@ def format_exception(e):
 if __name__ == "__main__":
     #main()
     parseTables("http://en.wikipedia.org/wiki/Forbes_Celebrity_100")
-    parseTables("http://en.wikipedia.org/wiki/Forbes_list_of_The_World's_Most_Powerful_People")
+    #parseTables("http://en.wikipedia.org/wiki/Forbes_list_of_The_World's_Most_Powerful_People")
