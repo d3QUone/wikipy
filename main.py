@@ -169,22 +169,31 @@ def parseTables(page_link):
         r = requests.get(page_link, headers = headers)
         soup = bs(r.text)
         all_tables = soup.find_all("table", class_ = "wikitable")
-        print "found {0} tables on the page\n".format(len(all_tables))
+        print "---found {0} tables on the page---\n".format(len(all_tables))
         for table in all_tables:
-            #print table
-            # 1 - find num of cols
             sub_soup = bs(str(table))
             ths = sub_soup.find_all("th")
-            print "current table has {0} columns".format(len(ths))
-            
+            step = len(ths)
+            print "--current table has {0} columns--".format(step)
+
+            i = 0
+            res = ""
             all_td = sub_soup.find_all("td")
             for td in all_td:
-                print td
+                if i % step == 0:
+                    print res
+                    print "--"*25
+                    res = ""
+                # returns raw text without html-tags
+                buf = str(td).replace("\n", " ").replace("&amp;", "&")
+                while buf.find("<") != -1 or buf.find(">") != -1:
+                    a = buf.find("<")
+                    b = buf.find(">")
+                    buf = buf[:a] + buf[b+1:] 
+                res += buf + "|"
+                i += 1
+            print "\n", "**"*30, "\n"
             
-            print "--"*25
-            
-        
-
     except Exception as ex:
         print "(parseTables, r)", format_exception(ex)
         print "--"*25
