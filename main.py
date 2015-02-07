@@ -252,20 +252,29 @@ def parseTables(page_link):
 
            
 if __name__ == "__main__": 
-    file_set = "6b"
+    file_set = "7a"
     endpoint = "http://en.wikipedia.org/"
     links = ["http://en.wikipedia.org/wiki/Forbes_Celebrity_100",
              "http://en.wikipedia.org/wiki/Forbes_list_of_The_World's_Most_Powerful_People"]
+
+    already_saved = []
+    append = already_saved.append
     for link in links:
         res = parseTables(link)
+        print "--- Got a set of {0} tables".format(len(res))
         for item in res:
+            print "- Got a set of {0} rows".format(len(item))
             i = 0
             while i < len(item):
                 row = item[i]
                 personalData = parsePeople(endpoint + row)
                 if personalData:
                     personalData["role"] = item[i + 1]
-                    do_saving(personalData, file_set)
+                    if personalData not in already_saved:
+                        append(personalData)
+                        do_saving(personalData, file_set)
+                    else:
+                        print "already saved"
                     i += 1
                 i += 1
     print "\nDone...\n"
