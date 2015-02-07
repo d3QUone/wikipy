@@ -116,7 +116,7 @@ def parsePeople(link):
     template = {}
     headers = {"User-agent":"Mozilla/5.0"}
     try:
-        r = requests.get(link, headers=headers)
+        r = requests.get(link, headers=headers, timeout = 10)
         soup = bs(r.text)
         allclasses = ["fn", "nickname", "bday", "dday deathdate"]
         for aclass in allclasses:                
@@ -218,7 +218,7 @@ def parseTables(page_link):
     append = template.append
     headers = {"User-agent":"Mozilla/5.0"}
     try:
-        r = requests.get(page_link, headers = headers)
+        r = requests.get(page_link, headers = headers, timeout = 10)
         soup = bs(r.text)
         all_tables = soup.find_all("table", class_ = "wikitable")
         print "\n---found {0} tables on the page---\n".format(len(all_tables))
@@ -252,14 +252,20 @@ def parseTables(page_link):
 
            
 if __name__ == "__main__": 
-    file_set = "7a"
+    file_set = "9"
     endpoint = "http://en.wikipedia.org/"
-    links = ["http://en.wikipedia.org/wiki/Forbes_Celebrity_100",
-             "http://en.wikipedia.org/wiki/Forbes_list_of_The_World's_Most_Powerful_People"]
+    links = {
+        "7a": ["http://en.wikipedia.org/wiki/Forbes_Celebrity_100",
+               "http://en.wikipedia.org/wiki/Forbes_list_of_The_World's_Most_Powerful_People"],
+        "8": ["http://en.wikipedia.org/wiki/Forbes%27_list_of_world%27s_highest-paid_athletes",
+              "http://en.wikipedia.org/wiki/40_under_40_(Fortune_magazine)",
+              "http://en.wikipedia.org/wiki/Forbes_list_of_The_World%27s_100_Most_Powerful_Women"],
+        "9": []
+              }
 
     already_saved = []
     append = already_saved.append
-    for link in links:
+    for link in links[file_set]:
         res = parseTables(link)
         print "--- Got a set of {0} tables".format(len(res))
         for item in res:
