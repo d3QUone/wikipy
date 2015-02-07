@@ -3,8 +3,23 @@ import requests, sys, json, traceback
 from bs4 import BeautifulSoup as bs
 from datetime import datetime
 
+
+# tracking the error in the caugth exception
+def format_exception(e):
+    print str(e) + " - given into traceback"
+    exception_list = traceback.format_stack()
+    exception_list = exception_list[:-2]
+    exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
+    exception_list.extend(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
+    exception_str = "Traceback (most recent call last):\n"
+    exception_str += "".join(exception_list)
+    exception_str = exception_str[:-1]
+    return exception_str
+
+
 everylink = [] # of loaded
 endLists = []  # of new links
+
 
 # load all datas
 def getReady():
@@ -30,7 +45,7 @@ def getReady():
         print "Indexing system was set up, don't delete 'indexing.txt'"
         
 
-def main():
+def main(): # fuck it. not flexible enough 
     t = datetime.now()
     getReady()
     print "Started on {0}, have {1} links to parse".format(t, len(endLists))
@@ -107,7 +122,6 @@ def parsePeople(link):
         for aclass in allclasses:                
             group = soup.find_all("span", class_ = aclass)
             if len(group) > 0:
-                print aclass, group
                 f = str(group[0])
                 a0 = f.find("<")
                 a1 = f.find(">")
@@ -118,7 +132,7 @@ def parsePeople(link):
                     f = f.replace(t, "")
                 forsave = f.replace("\n", " ")                    
                 template[aclass] = forsave
-        
+        """
         # class = role / category , tag = td
         roles = soup.find_all(class_ = "role")
         if len(roles) > 0:
@@ -141,67 +155,16 @@ def parsePeople(link):
         </td>
         '''
         print "link:", link
+        """
         if len(template) > 2:
             template["link"] = link
-            try: # to save into existing file
-                ofile = open("output/output" + str(len(everylink["input"])) + ".csv", "a")
-                lis = generateCSVstring(template)
-                ofile.write(lis)
-                ofile.close()
-                return True # 1
-            except: # create file and save
-                ofile = open("output/output" + str(len(everylink["input"])) + ".csv", "w")
-                lis = generateCSVstring(template)
-                ofile.write(lis)
-                ofile.close()
-                return True # 1
+            return template
+        else:
+            return None
     except Exception as ex:
-        print "(parsePeople, r)", format_exception(ex)
-        print "--"*25
-        return False # 3
+        print "(parsePeople, r)"#, format_exception(ex)
+        return None
 
-
-
-def parseTables(page_link):
-    template = {}
-    headers = {"User-agent":"Mozilla/5.0"}
-    try:
-        pos = 0
-        r = requests.get(page_link, headers = headers)
-        soup = bs(r.text)
-        all_tables = soup.find_all("table", class_ = "wikitable")
-        print "---found {0} tables on the page---\n".format(len(all_tables))
-        for table in all_tables:
-            sub_soup = bs(str(table))
-            all_td = sub_soup.find_all("td")
-
-            sub_res = []
-            append = sub_res.append
-            for td in all_td:
-                buf = str(td).replace("\n", " ").replace("&amp;", "&")
-                if "flagicon" in buf:
-                    a = buf.find('href="')
-                    buf = buf[a+1:]
-                    a = buf.find('href="') + len('href="')
-                    buf = buf[a+1:]
-                    b = buf.find('"')
-                    href = buf[:b]
-                    append(href)
-                else:
-                    while buf.find("<") != -1 and buf.find(">") != -1:
-                        a = buf.find("<")
-                        b = buf.find(">")
-                        buf = buf[:a] + buf[b+1:] 
-                    append(buf)
-            print sub_res
-            template[pos] = sub_res
-            pos += 1
-            print "\n", "--"*35, "\n"
-        print "total res:", template
-    except Exception as ex:
-        print "(parseTables, r)", format_exception(ex)
-        print "--"*25
-        
 
 # prepare a table row for .CSV here
 def generateCSVstring(dic):
@@ -239,20 +202,70 @@ def generateCSVstring(dic):
     return st + "\n"
 
 
-# tracking the error in the caugth exception
-def format_exception(e):
-    print str(e) + " - given into traceback"
-    exception_list = traceback.format_stack()
-    exception_list = exception_list[:-2]
-    exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
-    exception_list.extend(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
-    exception_str = "Traceback (most recent call last):\n"
-    exception_str += "".join(exception_list)
-    exception_str = exception_str[:-1]
-    return exception_str
+def do_saving(dict_to_save, file_set):
+    try: 
+        ofile = open("output/output{0}.csv".format(file_set), "a")
+    except: 
+        ofile = open("output/output{0}.csv".format(file_set), "w")
+    lis = generateCSVstring(dict_to_save)
+    ofile.write(lis)
+    ofile.close()
+    print "saved one"
+
+
+def parseTables(page_link):
+    template = []
+    append = template.append
+    headers = {"User-agent":"Mozilla/5.0"}
+    try:
+        r = requests.get(page_link, headers = headers)
+        soup = bs(r.text)
+        all_tables = soup.find_all("table", class_ = "wikitable")
+        print "\n---found {0} tables on the page---\n".format(len(all_tables))
+        for table in all_tables:
+            sub_soup = bs(str(table))
+            all_td = sub_soup.find_all("td")
+
+            sub_res = []
+            sub_pend = sub_res.append
+            for td in all_td:
+                buf = str(td).replace("\n", " ").replace("&amp;", "&")
+                if "flagicon" in buf:
+                    a = buf.find('href="')
+                    buf = buf[a+1:]
+                    a = buf.find('href="') + len('href="')
+                    buf = buf[a+1:]
+                    b = buf.find('"')
+                    href = buf[:b]
+                    sub_pend(href)
+                else:
+                    while buf.find("<") != -1 and buf.find(">") != -1:
+                        a = buf.find("<")
+                        b = buf.find(">")
+                        buf = buf[:a] + buf[b+1:] 
+                    sub_pend(buf)
+            append(sub_res) # whole current table
+    except Exception as ex:
+        print "(parseTables, r)", format_exception(ex)
+        print "--"*25
+    return template 
 
            
-if __name__ == "__main__":
-    #main()
-    parseTables("http://en.wikipedia.org/wiki/Forbes_Celebrity_100")
-    #parseTables("http://en.wikipedia.org/wiki/Forbes_list_of_The_World's_Most_Powerful_People")
+if __name__ == "__main__": 
+    file_set = "6b"
+    endpoint = "http://en.wikipedia.org/"
+    links = ["http://en.wikipedia.org/wiki/Forbes_Celebrity_100",
+             "http://en.wikipedia.org/wiki/Forbes_list_of_The_World's_Most_Powerful_People"]
+    for link in links:
+        res = parseTables(link)
+        for item in res:
+            i = 0
+            while i < len(item):
+                row = item[i]
+                personalData = parsePeople(endpoint + row)
+                if personalData:
+                    personalData["role"] = item[i + 1]
+                    do_saving(personalData, file_set)
+                    i += 1
+                i += 1
+    print "\nDone...\n"
