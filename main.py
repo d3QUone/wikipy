@@ -176,22 +176,36 @@ def parseTables(page_link):
             step = len(ths)
             print "--current table has {0} columns--".format(step)
 
+            res = []
+            append = res.append
+            sub_res = []
+            sub_pend = sub_res.append
             i = 0
-            res = ""
             all_td = sub_soup.find_all("td")
             for td in all_td:
                 if i % step == 0:
-                    print res
+                    append(sub_res)
+                    print sub_res
+                    sub_res[:] = []
                     print "--"*25
-                    res = ""
                 # returns raw text without html-tags
                 buf = str(td).replace("\n", " ").replace("&amp;", "&")
-                while buf.find("<") != -1 or buf.find(">") != -1:
-                    a = buf.find("<")
-                    b = buf.find(">")
-                    buf = buf[:a] + buf[b+1:] 
-                res += buf + "|"
+                if "flagicon" in buf:
+                    a = buf.find('href="')
+                    buf = buf[a+1:]
+                    a = buf.find('href="') + len('href="')
+                    buf = buf[a+1:]
+                    b = buf.find('"')
+                    href = buf[:b]
+                    sub_pend(href)
+                else:
+                    while buf.find("<") != -1 and buf.find(">") != -1:
+                        a = buf.find("<")
+                        b = buf.find(">")
+                        buf = buf[:a] + buf[b+1:] 
+                    sub_pend(buf)
                 i += 1
+            print res
             print "\n", "**"*30, "\n"
             
     except Exception as ex:
@@ -250,5 +264,5 @@ def format_exception(e):
            
 if __name__ == "__main__":
     #main()
-    #parseTables("http://en.wikipedia.org/wiki/Forbes_Celebrity_100")
+    parseTables("http://en.wikipedia.org/wiki/Forbes_Celebrity_100")
     parseTables("http://en.wikipedia.org/wiki/Forbes_list_of_The_World's_Most_Powerful_People")
