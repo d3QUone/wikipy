@@ -32,16 +32,14 @@ def getReady():
 
 def main():
     t = datetime.now()
-    print "started on {0}\n".format(t)
     getReady()
-    print len(endLists), "links in input: "
+    print "Started on {0}, have {1} links to parse".format(t, len(endLists))
     parseEndLists(endLists)
-    print "\nsession closed:\ncheck {0} error links\nspent {1} time".format(len(everylink["errors"]), datetime.now() - t)
+    print "\nAll done in {0}; found {1} error links".format(datetime.now() - t, len(everylink["errors"]))
 
     # an experiment..
     t = datetime.now()
-    print "\nre-do errors:"
-    print "started on {0}\n".format(t)
+    print "\nre-doing errors... started on {0}\n".format(t)
     en = 0
     for erlink in everylink["errors"]:
         if parsePeople(erlink):
@@ -55,17 +53,16 @@ def main():
 
 
 def parseEndLists(List):
-    headers = {"User-agent":"Mozilla/5.0"}
+    headers = {"User-agent": "Mozilla/5.0"}
     endpoint = "http://en.wikipedia.org"
     for link in List:
         if len(link) > 0:
             print link
             if link.decode("utf8") not in everylink["input"]: 
-                r = requests.get(link, headers=headers)
+                r = requests.get(link, headers = headers)
                 soup = bs(r.text)
                 hrefs = soup.find_all("a")
                 print "\n{0} hrefs on the page\n".format(len(hrefs))
-                # any optimisation from here to endpoin?
                 j = 0
                 for hr in hrefs:
                     sthr = str(hr)                    
@@ -106,46 +103,53 @@ def parsePeople(link):
     try:
         r = requests.get(link, headers=headers)
         soup = bs(r.text)
-        allclasses = ["fn", "nickname", "bday", "dday deathdate", "role"]
-        for aclass in allclasses:
-            if aclass == "role":
-                tag = "td"
-            else:
-                tag = "span"
-            group = soup.find_all(tag, class_ = aclass)
+        allclasses = ["fn", "nickname", "bday", "dday deathdate"]
+        for aclass in allclasses:                
+            group = soup.find_all("span", class_ = aclass)
             if len(group) > 0:
-                #print "----", aclass, "----"
-                forsave = ""
-                for item in group:
-                    f = str(item)
+                print aclass, group
+                f = str(group[0])
+                a0 = f.find("<")
+                a1 = f.find(">")
+                while a0 != -1:
                     a0 = f.find("<")
                     a1 = f.find(">")
-                    while a0 != -1:
-                        a0 = f.find("<")
-                        a1 = f.find(">")
-                        t = f[a0:a1+1]
-                        f = f.replace(t, "")
-                    #print "f2:", f
-                    if aclass == "role":
-                        forsave += f.replace("\n", " ") + " "
-                    else:
-                        forsave = f.replace("\n", " ")
-                        break
-                        # I need only one non-role report
-                #print aclass, "|", forsave
+                    t = f[a0:a1+1]
+                    f = f.replace(t, "")
+                forsave = f.replace("\n", " ")                    
                 template[aclass] = forsave
-        # now template is fulled, save to table
-        if len(template) > 1:
+        
+        # class = role / category , tag = td
+        roles = soup.find_all(class_ = "role")
+        if len(roles) > 0:
+            print "roles:", roles
+        else:
+            category = soup.find_all(class_ = "category")
+            print "category:", category
+        '''
+        <td class="category" style="vertical-align:middle;line-height:1.3em;">
+        <div class="hlist">
+        <ul style="line-height:1.25em;">
+        <li>Astronomy</li>
+        <li><a href="/wiki/Canon_law" title="Canon law">Canon law</a></li>
+        <li>Economics</li>
+        <li>Mathematics</li>
+        <li>Medicine</li>
+        <li>Politics</li>
+        </ul>
+        </div>
+        </td>
+        '''
+        print "link:", link
+        if len(template) > 2:
             template["link"] = link
-            try:
-                # save to existing file
+            try: # to save into existing file
                 ofile = open("output/output" + str(len(everylink["input"])) + ".csv", "a")
                 lis = generateCSVstring(template)
                 ofile.write(lis)
                 ofile.close()
                 return True # 1
-            except:
-                # create file and save
+            except: # create file and save
                 ofile = open("output/output" + str(len(everylink["input"])) + ".csv", "w")
                 lis = generateCSVstring(template)
                 ofile.write(lis)
@@ -156,6 +160,35 @@ def parsePeople(link):
         print "--"*25
         return False # 3
 
+
+
+def parseTables(page_link):
+    template = {}
+    headers = {"User-agent":"Mozilla/5.0"}
+    try:
+        r = requests.get(page_link, headers = headers)
+        soup = bs(r.text)
+        all_tables = soup.find_all("table", class_ = "wikitable")
+        print "found {0} tables on the page\n".format(len(all_tables))
+        for table in all_tables:
+            #print table
+            # 1 - find num of cols
+            sub_soup = bs(str(table))
+            ths = sub_soup.find_all("th")
+            print "current table has {0} columns".format(len(ths))
+            
+            all_td = sub_soup.find_all("td")
+            for td in all_td:
+                print td
+            
+            print "--"*25
+            
+        
+
+    except Exception as ex:
+        print "(parseTables, r)", format_exception(ex)
+        print "--"*25
+        
 
 # prepare a table row for .CSV here
 def generateCSVstring(dic):
@@ -207,4 +240,6 @@ def format_exception(e):
 
            
 if __name__ == "__main__":
-    main()
+    #main()
+    #parseTables("http://en.wikipedia.org/wiki/Forbes_Celebrity_100")
+    parseTables("http://en.wikipedia.org/wiki/Forbes_list_of_The_World's_Most_Powerful_People")
