@@ -1,12 +1,13 @@
-<h4>wikipy</h4> - collection of Python 2.7.8-made tools to get the biggest list of well known people from "Wikipedia"
+<b>wikipy</b> - collection of Python 2.7.8-made tools to get the biggest list of well known people from "Wikipedia"
 <hr>
 
-<h4>Some ideas how to make this to work:</h4>
+<b>Some ideas how to make this to work:</b>
+
 1) Using Semantic search in DBpedia: create different triple searches, check graphs and parse the result.<br>Use <code>rdflib, json</code>
 
 2) Manually find all wikipedia lists with people, parse them for links and parse the target pages.<br>Use <code>bs4, requests</code> modules
 
-<h4>As a result the script was based on the 2nd idea</h4>
+<b>As a result the script was based on the 2nd idea</b>
 <hr>
 <h4>Features list:</h4>
 
