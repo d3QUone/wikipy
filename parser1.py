@@ -2,8 +2,9 @@
 import requests, sys, json, traceback
 from bs4 import BeautifulSoup as bs
 from datetime import datetime
-from saving import do_saving
 
+from saving import do_saving
+from config import links
 
 # tracking the error in the caugth exception
 def format_exception(e):
@@ -244,24 +245,13 @@ def parseOtherSite(page_link):
 
            
 if __name__ == "__main__":
-    file_set = "9"
+    file_set = "8" #7a
     endpoint = "http://en.wikipedia.org/"
-    links = {
-        "7a": ["http://en.wikipedia.org/wiki/Forbes_Celebrity_100",
-               "http://en.wikipedia.org/wiki/Forbes_list_of_The_World's_Most_Powerful_People"],
-        "8": ["http://en.wikipedia.org/wiki/Forbes%27_list_of_world%27s_highest-paid_athletes",
-              "http://en.wikipedia.org/wiki/40_under_40_(Fortune_magazine)",
-              "http://en.wikipedia.org/wiki/Forbes_list_of_The_World%27s_100_Most_Powerful_Women"],
-        "9": ["http://www.biographyonline.net/people/famous-100.html"]
-              }
-
+    
     already_saved = []
     append = already_saved.append
     for link in links[file_set]:
-        #res = parseTables(link) # set < 9
         res = parseOtherSite(link)
-        print res
-        '''
         print "--- Got a set of {0} tables".format(len(res))
         for item in res:
             print "- Got a set of {0} rows".format(len(item))
@@ -278,7 +268,6 @@ if __name__ == "__main__":
                         print "already saved"
                     i += 1
                 i += 1
-        '''
     print "\nDone...\n"
 
 
