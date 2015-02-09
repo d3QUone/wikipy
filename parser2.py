@@ -61,7 +61,7 @@ def parseOtherSite(page_link):
 numerals = [str(i) for i in xrange(10)] # need for detecting dates
            
 if __name__ == "__main__":
-    file_set = "9"
+    file_set = "10"
     main_domain = "http://www.biographyonline.net"
     print "Found {0} links on {1} file-set...".format(len(links[file_set]), file_set)
 
