@@ -71,3 +71,6 @@ output/output5.csv
 _trash/hrefs 1.txt
 _trash/indexing 0.txt
 _trash/indexing 1.txt
+output/output7a.csv
+output/output8.csv
+*.csv
