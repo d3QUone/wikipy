@@ -18,15 +18,9 @@ Collection of Python 2.7.8-made tools to get the biggest list of well known peop
 <li><s>Parse personal page for Full name, Nickname, B-date, D-date, Role/Occupation</s></li>
 <li><s>Save data into CSV file</s></li>
 <li><s>Intergate indexing system</s></li>
-<li>Improve parsing personal data</li>
+<li><s>Improve parsing personal data</s></li>
 <li>Intergate multi threading system</li>
 <li>Optimize:)</li>
 </ul>
 
-
-===
-<h4>Usage:</h4>
-
-1) Save all needed links to lists of personal pages to the <code>lists.txt</code> file
-
-2) Run <code>main.py</code> and get the result in <code>output.csv</code>
+Parses not only wikipedia (a huge set of script)
