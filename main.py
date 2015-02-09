@@ -2,6 +2,7 @@
 import requests, sys, json, traceback
 from bs4 import BeautifulSoup as bs
 from datetime import datetime
+from saving import do_saving
 
 
 # tracking the error in the caugth exception
@@ -43,6 +44,13 @@ def getReady():
         f.write(json.dumps(everylink))
         f.close()
         print "Indexing system was set up, don't delete 'indexing.txt'"
+
+
+# store processed links
+def saveProcessData():
+    f = open("indexing.txt", "w")
+    f.write(json.dumps(everylink))
+    f.close()
         
 
 def main(): # fuck it. not flexible enough 
@@ -102,14 +110,8 @@ def parseEndLists(List):
                                 saveProcessData()
                 print "saved data about {0} people total".format(j)
             everylink["input"].append(link)
+    # want return something ?
 
-
-# store processed links
-def saveProcessData():
-    f = open("indexing.txt", "w")
-    f.write(json.dumps(everylink))
-    f.close()
-            
     
 # find out how to parse 1st paragraph
 def parsePeople(link):
@@ -164,53 +166,6 @@ def parsePeople(link):
     except Exception as ex:
         print "(parsePeople, r)"#, format_exception(ex)
         return None
-
-
-# prepare a table row for .CSV here
-def generateCSVstring(dic):
-    st = ""; br = "; "; em = " "
-    try:
-        st += dic["fn"].encode("utf8") + br
-    except:
-        st += em + br
-    try:
-        st += dic["nickname"].encode("utf8") + br
-    except:
-        st += em + br
-    try:
-        if isinstance(dic["role"], list):
-            for role in dic["role"]:
-                st += role.encode("utf8") + ", "
-            st += br
-        else:
-            st += dic["role"].encode("utf8") + br
-    except:
-        st += em + br
-    try:
-        st += dic["bday"].encode("utf8") + br
-    except:
-        st += em + br
-    try:
-        st += dic["dday deathdate"].encode("utf8") + br
-    except:
-        st += em + br
-    try:
-        st += dic["link"].encode("utf8")
-    except:
-        st += em
-        pass
-    return st + "\n"
-
-
-def do_saving(dict_to_save, file_set):
-    try: 
-        ofile = open("output/output{0}.csv".format(file_set), "a")
-    except: 
-        ofile = open("output/output{0}.csv".format(file_set), "w")
-    lis = generateCSVstring(dict_to_save)
-    ofile.write(lis)
-    ofile.close()
-    print "saved one"
 
 
 def parseTables(page_link):
