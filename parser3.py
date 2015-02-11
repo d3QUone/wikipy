@@ -48,36 +48,55 @@ def find_all_sections(endpoint):
 
 
 # get links.... 
-def parse_famous_names(link):
-    # next page: + ?page=2 (3, 4, ...), if count > 101
-    # try to go on next pages and check if data not the same. if all the same - return 
+def parse_famous_names(endpoint):
+    try:
+        links = []
+        append = links.append
+        saved = 0; repeat = 0
+        page = 1
+        while page < 6: # the hugest category has 5 pages
+            r = requests.get(endpoint + "?page={0}".format(page), headers=headers, timeout = 10)
+            page += 1
+            soup = bs(r.text)
+            people = soup.find_all("div", class_="main_cat_profile_box")
+            for item in people:
+                buf = str(item)
+                a = buf.find('href="')
+                buf = buf[a+len('href="'):]
+                a = buf.find('"')
+                link = "http:" + buf[:a]
+                
+                if link not in links:
+                    append(link)
+                    saved += 1
+                else:
+                    repeat += 1
 
-    # "div", class_="main_cat_profile_box"  -> "href"
-    
-    
-    return None
+                if repeat > 0 and repeat > saved:
+                    page = 6
+                    break
+            #print "saved {0}, not saved {1}".format(saved, repeat)
+        #print "total got {0} links".format(len(links))
+        return links
+    except Exception as ex:
+        print "(parse_famous_names, r)", format_exception(ex)
+        return []
 
 
-def get_personal_data(link):
+def get_personal_data(endpoint):
     data = {}
 
     # what file_set ? 
     do_saving(data, "11a")
     
 
-# -- may be no need 
-# return link by name
-def do_wiki_search(name):
-    # search_endpoint = "http://en.wikipedia.org/"
-    return ""
-
 
 # -- may be no need
 # return data on a linked person
-def parse_current_person(link):
+def parse_current_person(endpoint):
     template = {}
     try:
-        r = requests.get(link, headers=headers, timeout = 10)
+        r = requests.get(endpoint, headers=headers, timeout = 10)
         soup = bs(r.text)
         allclasses = ["fn", "nickname", "bday", "dday deathdate"]
         for aclass in allclasses:                
@@ -115,10 +134,10 @@ def parse_current_person(link):
         </div>
         </td>
         '''
-        print "link:", link
+        print "link:", endpoint
         """
         if len(template) > 2:
-            template["link"] = link
+            template["link"] = endpoint
             return template
         else:
             return None
@@ -156,12 +175,14 @@ if __name__ == "__main__":
                        'http://www.thefamouspeople.com/famous-people-by-country.php',
                        'http://www.thefamouspeople.com/famous-people-by-birthday.php']
     
-    already_saved = [] #save name only? 
+    already_saved = [] #save names only? 
     append = already_saved.append
 
-    '''
     for link in parse_endpoints:
-        res = parseOtherSite(link)
+        res = parse_famous_names(link) # set of end-links
+        print "--All"
+        break
+        '''
         print "--- Got a set of {0} tables".format(len(res))
         for item in res:
             print "- Got a set of {0} rows".format(len(item))
@@ -178,6 +199,6 @@ if __name__ == "__main__":
                         print "already saved"
                     i += 1
                 i += 1
-    '''
+        '''
     print "\nDone...\n"
     
