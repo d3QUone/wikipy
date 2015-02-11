@@ -36,7 +36,7 @@ def parse_other_site(page_link):
             sub_pend(buf)
             append(sub_res) # whole current table
     except Exception as ex:
-        print "(parseTables, r)", format_exception(ex)
+        print "(parse_other_site, r)", format_exception(ex)
         print "--"*25
     return template
 
@@ -73,11 +73,22 @@ def parse_famous_names(endpoint):
                 if repeat > 0 and repeat > saved:
                     page = 6
                     break
-        print "saved {0}, not saved {1}".format(saved, repeat)
+        print "saved {0} links, not saved {1}".format(saved, repeat)
         return links
     except Exception as ex:
         print "(parse_famous_names, r)", format_exception(ex)
         return []
+
+
+# returns clear text
+def remove_tags(string):
+    buf = str(string)
+    while buf.find("<") != -1 and buf.find(">") != -1:
+        a = buf.find("<")
+        b = buf.find(">")
+        buf = buf[:a] + buf[b+1:]
+    buf = buf.replace("&amp;", "&").split(" AD") # cause fuck it
+    return buf[0]
 
 
 def get_personal_data(endpoint):
@@ -93,71 +104,34 @@ def get_personal_data(endpoint):
         data["fn"] = name
         data["link"] = endpoint
         # get all other datas
-        quick_left = soup.find_all("div", class_="quick_left")
         quick_right = soup.find_all("div", class_="quick_right")
+        quick_left = soup.find_all("div", class_="quick_left")
+        len_quick_left = len(quick_left)
 
-        key_words = {"Born": "bday", "Died": "dday deathdate", "Famous": "role", "Found": "role"}
+        key_words = {"Born on": "bday", "Died": "dday deathdate", "Famous": "role", "Found": "role"}
         keys = key_words.keys()
-        
-        return data
+        data["role"] = ""
+        data["dday deathdate"] = ""
+
+        j = 0
+        while j < len_quick_left:
+            buf = remove_tags(quick_left[j])
+            for cat in keys:
+                if cat in buf:
+                    if key_words[cat] == "role":
+                        data["role"] += remove_tags(quick_right[j]) + ", "
+                    else:
+                        data[key_words[cat]] = remove_tags(quick_right[j])
+            j += 1
+
+        if data["role"] == "" or data["dday deathdate"] == "":
+            return None
+        else:
+            data["role"] = data["role"][:-2] # delete last ', '
+            return data
     except Exception as ex:
         print "(get_personal_data, r)", format_exception(ex)
         return {}
-
-
-# -- may be no need
-# return data on a linked person
-def parse_current_person(endpoint):
-    template = {}
-    try:
-        r = requests.get(endpoint, headers=headers, timeout = 10)
-        soup = bs(r.text)
-        allclasses = ["fn", "nickname", "bday", "dday deathdate"]
-        for aclass in allclasses:                
-            group = soup.find_all("span", class_ = aclass)
-            if len(group) > 0:
-                f = str(group[0])
-                a0 = f.find("<")
-                a1 = f.find(">")
-                while a0 != -1:
-                    a0 = f.find("<")
-                    a1 = f.find(">")
-                    t = f[a0:a1+1]
-                    f = f.replace(t, "")
-                forsave = f.replace("\n", " ")                    
-                template[aclass] = forsave
-        """
-        # class = role / category , tag = td
-        roles = soup.find_all(class_ = "role")
-        if len(roles) > 0:
-            print "roles:", roles
-        else:
-            category = soup.find_all(class_ = "category")
-            print "category:", category
-        '''
-        <td class="category" style="vertical-align:middle;line-height:1.3em;">
-        <div class="hlist">
-        <ul style="line-height:1.25em;">
-        <li>Astronomy</li>
-        <li><a href="/wiki/Canon_law" title="Canon law">Canon law</a></li>
-        <li>Economics</li>
-        <li>Mathematics</li>
-        <li>Medicine</li>
-        <li>Politics</li>
-        </ul>
-        </div>
-        </td>
-        '''
-        print "link:", endpoint
-        """
-        if len(template) > 2:
-            template["link"] = endpoint
-            return template
-        else:
-            return None
-    except Exception as ex:
-        print "(parsePeople, r)"#, format_exception(ex)
-        return None
 
 
 if __name__ == "__main__":
@@ -187,8 +161,8 @@ if __name__ == "__main__":
                        'http://www.thefamouspeople.com/famous-people-by-zodiac-sign.php',
                        'http://www.thefamouspeople.com/famous-people-by-country.php',
                        'http://www.thefamouspeople.com/famous-people-by-birthday.php']
+    file_set = "11"
     
-    file_set = "11a"
     saved = 0; rep = 0
     already_saved = []
     append = already_saved.append
@@ -196,10 +170,10 @@ if __name__ == "__main__":
         set_of_links = parse_famous_names(endpoint)
         for sub_link in set_of_links:
             personal_data = get_personal_data(sub_link)
-            if personal_data not in already_saved:
+            if personal_data and personal_data not in already_saved:
                 append(personal_data)
                 do_saving(personal_data, file_set)
                 saved += 1
             else:
                 rep += 1
-    print "\nsaved {0}, not saved {1}".format(saved, rep)
+    print "\nsaved {0} people, {1} canceled".format(saved, rep)

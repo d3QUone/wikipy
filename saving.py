@@ -31,7 +31,6 @@ def generateCSVstring(dic, utf8 = False):
                 st += role.encode("utf8") + ", "
             st += br
         else:
-            #print "encode:", dic["role"].encode("utf8"), "\n"
             st += dic["role"].encode("utf8") + br
     except:
         st += em + br
