@@ -1,27 +1,15 @@
 # -*- coding: utf-8 -*-
-import requests, sys, json, traceback
+import requests, sys
 from bs4 import BeautifulSoup as bs
 from datetime import datetime
-from saving import do_saving
+from saving import do_saving, format_exception
 
+headers = {"User-agent": "Mozilla/5.0"}
 
-# tracking the error in the caugth exception
-def format_exception(e):
-    print str(e) + " - given into traceback"
-    exception_list = traceback.format_stack()
-    exception_list = exception_list[:-2]
-    exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
-    exception_list.extend(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
-    exception_str = "Traceback (most recent call last):\n"
-    exception_str += "".join(exception_list)
-    exception_str = exception_str[:-1]
-    return exception_str
-
-
+# get links from lists on any site
 def parse_other_site(page_link):
     template = []
     append = template.append
-    headers = {"User-agent":"Mozilla/5.0"}
     try:
         r = requests.get(page_link, headers = headers, timeout = 10)
         soup = bs(r.text)
@@ -40,7 +28,7 @@ def parse_other_site(page_link):
             href = buf[:b]
             buf = buf[b+2:]
             sub_pend(href)
-            
+
             while buf.find("<") != -1 and buf.find(">") != -1:
                 a = buf.find("<")
                 b = buf.find(">")
@@ -59,15 +47,35 @@ def find_all_sections(endpoint):
     return ["http:" + i[0] for i in x if len(i[0]) > 0]
 
 
+# get links.... 
+def parse_famous_names(link):
+    # next page: + ?page=2 (3, 4, ...), if count > 101
+    # try to go on next pages and check if data not the same. if all the same - return 
+
+    # "div", class_="main_cat_profile_box"  -> "href"
+    
+    
+    return None
+
+
+def get_personal_data(link):
+    data = {}
+
+    # what file_set ? 
+    do_saving(data, "11a")
+    
+
+# -- may be no need 
 # return link by name
 def do_wiki_search(name):
     # search_endpoint = "http://en.wikipedia.org/"
     return ""
 
 
+# -- may be no need
+# return data on a linked person
 def parse_current_person(link):
     template = {}
-    headers = {"User-agent":"Mozilla/5.0"}
     try:
         r = requests.get(link, headers=headers, timeout = 10)
         soup = bs(r.text)
@@ -148,11 +156,11 @@ if __name__ == "__main__":
                        'http://www.thefamouspeople.com/famous-people-by-country.php',
                        'http://www.thefamouspeople.com/famous-people-by-birthday.php']
     
-    already_saved = []
+    already_saved = [] #save name only? 
     append = already_saved.append
 
     '''
-    for link in links[file_set]:
+    for link in parse_endpoints:
         res = parseOtherSite(link)
         print "--- Got a set of {0} tables".format(len(res))
         for item in res:

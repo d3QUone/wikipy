@@ -1,3 +1,19 @@
+import traceback
+
+
+# tracking the error in the caugth exception
+def format_exception(e):
+    print str(e) + " - given into traceback"
+    exception_list = traceback.format_stack()
+    exception_list = exception_list[:-2]
+    exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
+    exception_list.extend(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
+    exception_str = "Traceback (most recent call last):\n"
+    exception_str += "".join(exception_list)
+    exception_str = exception_str[:-1]
+    return exception_str
+
+
 # prepare a table row for .CSV here
 def generateCSVstring(dic, utf8 = False):
     st = ""; br = "; "; em = " "
@@ -45,16 +61,3 @@ def do_saving(dict_to_save, file_set, log = False):
     ofile.close()
     if log:
         print "saved one"
-
-
-# tracking the error in the caugth exception
-def format_exception(e):
-    print str(e) + " - given into traceback"
-    exception_list = traceback.format_stack()
-    exception_list = exception_list[:-2]
-    exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
-    exception_list.extend(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
-    exception_str = "Traceback (most recent call last):\n"
-    exception_str += "".join(exception_list)
-    exception_str = exception_str[:-1]
-    return exception_str

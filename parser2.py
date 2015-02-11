@@ -1,4 +1,5 @@
-import requests, sys, json, traceback
+# -*- coding: utf-8 -*-
+import requests, sys
 from bs4 import BeautifulSoup as bs
 from datetime import datetime
 from saving import do_saving, format_exception
