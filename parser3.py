@@ -6,7 +6,7 @@ from saving import do_saving, format_exception
 
 headers = {"User-agent": "Mozilla/5.0"}
 
-# get links from lists on any site
+# get links from lists on any site - OK
 def parse_other_site(page_link):
     template = []
     append = template.append
@@ -41,13 +41,13 @@ def parse_other_site(page_link):
     return template
 
 
-# you can run it manually to get parse_endpoints lists
+# you can run it manually to get parse_endpoints lists - OK
 def find_all_sections(endpoint):
     x = parse_other_site(endpoint)
     return ["http:" + i[0] for i in x if len(i[0]) > 0]
 
 
-# get links.... 
+# get links - OK
 def parse_famous_names(endpoint):
     try:
         links = []
@@ -65,18 +65,15 @@ def parse_famous_names(endpoint):
                 buf = buf[a+len('href="'):]
                 a = buf.find('"')
                 link = "http:" + buf[:a]
-                
                 if link not in links:
                     append(link)
                     saved += 1
                 else:
                     repeat += 1
-
                 if repeat > 0 and repeat > saved:
                     page = 6
                     break
-            #print "saved {0}, not saved {1}".format(saved, repeat)
-        #print "total got {0} links".format(len(links))
+        print "saved {0}, not saved {1}".format(saved, repeat)
         return links
     except Exception as ex:
         print "(parse_famous_names, r)", format_exception(ex)
@@ -84,11 +81,28 @@ def parse_famous_names(endpoint):
 
 
 def get_personal_data(endpoint):
-    data = {}
+    try:
+        r = requests.get(endpoint, headers=headers, timeout = 10)
+        soup = bs(r.text)
+        # get full name
+        name_block = str(soup.find_all("h1")[0])
+        a = name_block.find("<h1>")
+        b = name_block.find("<span")
+        name = name_block[a+len("<h1>"):b-1] # b-1 cause have the trailing space
+        data = {}
+        data["fn"] = name
+        data["link"] = endpoint
+        # get all other datas
+        quick_left = soup.find_all("div", class_="quick_left")
+        quick_right = soup.find_all("div", class_="quick_right")
 
-    # what file_set ? 
-    do_saving(data, "11a")
-    
+        key_words = {"Born": "bday", "Died": "dday deathdate", "Famous": "role", "Found": "role"}
+        keys = key_words.keys()
+        
+        return data
+    except Exception as ex:
+        print "(get_personal_data, r)", format_exception(ex)
+        return {}
 
 
 # -- may be no need
@@ -147,8 +161,7 @@ def parse_current_person(endpoint):
 
 
 if __name__ == "__main__":
-    # parse_endpoints = find_all_sections("http://www.thefamouspeople.com/")
-    # but static links are better :)
+    # parse_endpoints = find_all_sections("http://www.thefamouspeople.com/") # but static links are better :)
     parse_endpoints = ['http://www.thefamouspeople.com/activists.php',
                        'http://www.thefamouspeople.com/business-people.php',
                        'http://www.thefamouspeople.com/criminals.php',
@@ -175,30 +188,18 @@ if __name__ == "__main__":
                        'http://www.thefamouspeople.com/famous-people-by-country.php',
                        'http://www.thefamouspeople.com/famous-people-by-birthday.php']
     
-    already_saved = [] #save names only? 
+    file_set = "11a"
+    saved = 0; rep = 0
+    already_saved = []
     append = already_saved.append
-
-    for link in parse_endpoints:
-        res = parse_famous_names(link) # set of end-links
-        print "--All"
-        break
-        '''
-        print "--- Got a set of {0} tables".format(len(res))
-        for item in res:
-            print "- Got a set of {0} rows".format(len(item))
-            i = 0
-            while i < len(item):
-                row = item[i]
-                personalData = parsePeople(endpoint + row)
-                if personalData:
-                    personalData["role"] = item[i + 1]
-                    if personalData not in already_saved:
-                        append(personalData)
-                        do_saving(personalData, file_set)
-                    else:
-                        print "already saved"
-                    i += 1
-                i += 1
-        '''
-    print "\nDone...\n"
-    
+    for endpoint in parse_endpoints:
+        set_of_links = parse_famous_names(endpoint)
+        for sub_link in set_of_links:
+            personal_data = get_personal_data(sub_link)
+            if personal_data not in already_saved:
+                append(personal_data)
+                do_saving(personal_data, file_set)
+                saved += 1
+            else:
+                rep += 1
+    print "\nsaved {0}, not saved {1}".format(saved, rep)
