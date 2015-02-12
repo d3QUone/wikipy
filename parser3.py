@@ -73,7 +73,7 @@ def parse_famous_names(endpoint):
                 if repeat > 0 and repeat > saved:
                     page = 6
                     break
-        print "saved {0} links, not saved {1}".format(saved, repeat)
+        print "saved {0} links, repeats on {1}+".format(saved, repeat)
         return links
     except Exception as ex:
         print "(parse_famous_names, r)", format_exception(ex)
@@ -111,7 +111,6 @@ def get_personal_data(endpoint):
         key_words = {"Born on": "bday", "Died": "dday deathdate", "Famous": "role", "Found": "role"}
         keys = key_words.keys()
         data["role"] = ""
-        data["dday deathdate"] = ""
 
         j = 0
         while j < len_quick_left:
@@ -124,14 +123,14 @@ def get_personal_data(endpoint):
                         data[key_words[cat]] = remove_tags(quick_right[j])
             j += 1
 
-        if data["role"] == "" or data["dday deathdate"] == "":
+        if data["role"] == "":
             return None
         else:
             data["role"] = data["role"][:-2] # delete last ', '
             return data
     except Exception as ex:
         print "(get_personal_data, r)", format_exception(ex)
-        return {}
+        return None
 
 
 if __name__ == "__main__":
@@ -161,7 +160,7 @@ if __name__ == "__main__":
                        'http://www.thefamouspeople.com/famous-people-by-zodiac-sign.php',
                        'http://www.thefamouspeople.com/famous-people-by-country.php',
                        'http://www.thefamouspeople.com/famous-people-by-birthday.php']
-    file_set = "11"
+    file_set = "12full"
     
     saved = 0; rep = 0
     already_saved = []
@@ -176,4 +175,5 @@ if __name__ == "__main__":
                 saved += 1
             else:
                 rep += 1
+        #break
     print "\nsaved {0} people, {1} canceled".format(saved, rep)

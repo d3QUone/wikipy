@@ -1,4 +1,4 @@
-import traceback
+import traceback, sys
 
 
 # tracking the error in the caugth exception
@@ -11,7 +11,7 @@ def format_exception(e):
     exception_str = "Traceback (most recent call last):\n"
     exception_str += "".join(exception_list)
     exception_str = exception_str[:-1]
-    return exception_str
+    return exception_str + "\n" + "-"*15
 
 
 # prepare a table row for .CSV here
