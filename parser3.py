@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
-import requests, sys
+import sys
+
+import requests
 from bs4 import BeautifulSoup as bs
-from datetime import datetime
+
 from saving import do_saving, format_exception
+
+
+reload(sys)
+sys.setdefaultencoding("utf8")
+
 
 headers = {"User-agent": "Mozilla/5.0"}
 
@@ -11,7 +18,7 @@ def parse_other_site(page_link):
     template = []
     append = template.append
     try:
-        r = requests.get(page_link, headers = headers, timeout = 10)
+        r = requests.get(page_link, headers=headers, timeout=10)
         soup = bs(r.text)
         all_lists = soup.find_all("li", class_="")
         print "\n---found {0} list items on the page---\n".format(len(all_lists))
@@ -19,25 +26,25 @@ def parse_other_site(page_link):
             buf = str(item)
             sub_res = []
             sub_pend = sub_res.append
-            
+
             a = buf.find('href="')
             buf = buf[a:]
             a = buf.find('href="') + len('href="')
             buf = buf[a:]
             b = buf.find('"')
             href = buf[:b]
-            buf = buf[b+2:]
+            buf = buf[b + 2:]
             sub_pend(href)
 
             while buf.find("<") != -1 and buf.find(">") != -1:
                 a = buf.find("<")
                 b = buf.find(">")
-                buf = buf[:a] + buf[b+1:]
+                buf = buf[:a] + buf[b + 1:]
             sub_pend(buf)
-            append(sub_res) # whole current table
+            append(sub_res)  # whole current table
     except Exception as ex:
         print "(parse_other_site, r)", format_exception(ex)
-        print "--"*25
+        print "--" * 25
     return template
 
 
@@ -52,17 +59,18 @@ def parse_famous_names(endpoint):
     try:
         links = []
         append = links.append
-        saved = 0; repeat = 0
+        saved = 0
+        repeat = 0
         page = 1
-        while page < 6: # the hugest category has 5 pages
-            r = requests.get(endpoint + "?page={0}".format(page), headers=headers, timeout = 10)
+        while page < 6:  # the hugest category has 5 pages
+            r = requests.get(endpoint + "?page={0}".format(page), headers=headers, timeout=10)
             page += 1
             soup = bs(r.text)
             people = soup.find_all("div", class_="main_cat_profile_box")
             for item in people:
                 buf = str(item)
                 a = buf.find('href="')
-                buf = buf[a+len('href="'):]
+                buf = buf[a + len('href="'):]
                 a = buf.find('"')
                 link = "http:" + buf[:a]
                 if link not in links:
@@ -86,20 +94,20 @@ def remove_tags(string):
     while buf.find("<") != -1 and buf.find(">") != -1:
         a = buf.find("<")
         b = buf.find(">")
-        buf = buf[:a] + buf[b+1:]
-    buf = buf.replace("&amp;", "&").split(" AD") # cause fuck it
+        buf = buf[:a] + buf[b + 1:]
+    buf = buf.replace("&amp;", "&").split(" AD")  # cause fuck it
     return buf[0]
 
 
 def get_personal_data(endpoint):
     try:
-        r = requests.get(endpoint, headers=headers, timeout = 10)
+        r = requests.get(endpoint, headers=headers, timeout=10)
         soup = bs(r.text)
         # get full name
         name_block = str(soup.find_all("h1")[0])
         a = name_block.find("<h1>")
         b = name_block.find("<span")
-        name = name_block[a+len("<h1>"):b-1] # b-1 cause have the trailing space
+        name = name_block[a + len("<h1>"):b - 1]  # b-1 cause have the trailing space
         data = {}
         data["fn"] = name
         data["link"] = endpoint
@@ -126,7 +134,7 @@ def get_personal_data(endpoint):
         if data["role"] == "":
             return None
         else:
-            data["role"] = data["role"][:-2] # delete last ', '
+            data["role"] = data["role"][:-2]  # delete last ', '
             return data
     except Exception as ex:
         print "(get_personal_data, r)", format_exception(ex)
@@ -135,34 +143,37 @@ def get_personal_data(endpoint):
 
 if __name__ == "__main__":
     # parse_endpoints = find_all_sections("http://www.thefamouspeople.com/") # but static links are better :)
-    parse_endpoints = ['http://www.thefamouspeople.com/activists.php',
-                       'http://www.thefamouspeople.com/business-people.php',
-                       'http://www.thefamouspeople.com/criminals.php',
-                       'http://www.thefamouspeople.com/dancers.php',
-                       'http://www.thefamouspeople.com/engineers.php',
-                       'http://www.thefamouspeople.com/fashion.php',
-                       'http://www.thefamouspeople.com/film-theater-personalities.php',
-                       'http://www.thefamouspeople.com/food-experts.php',
-                       'http://www.thefamouspeople.com/intellectuals-academics.php',
-                       'http://www.thefamouspeople.com/inventors-discoverers.php',
-                       'http://www.thefamouspeople.com/lawyers-judges.php',
-                       'http://www.thefamouspeople.com/leaders.php',
-                       'http://www.thefamouspeople.com/media-personalities.php',
-                       'http://www.thefamouspeople.com/musicians.php',
-                       'http://www.thefamouspeople.com/painters.php',
-                       'http://www.thefamouspeople.com/photographers.php',
-                       'http://www.thefamouspeople.com/physicians.php',
-                       'http://www.thefamouspeople.com/scientists.php',
-                       'http://www.thefamouspeople.com/singers.php',
-                       'http://www.thefamouspeople.com/sports-persons.php',
-                       'http://www.thefamouspeople.com/writers.php',
-                       'http://www.thefamouspeople.com/others.php',
-                       'http://www.thefamouspeople.com/famous-people-by-zodiac-sign.php',
-                       'http://www.thefamouspeople.com/famous-people-by-country.php',
-                       'http://www.thefamouspeople.com/famous-people-by-birthday.php']
+    parse_endpoints = [
+        'http://www.thefamouspeople.com/activists.php',
+        'http://www.thefamouspeople.com/business-people.php',
+        'http://www.thefamouspeople.com/criminals.php',
+        'http://www.thefamouspeople.com/dancers.php',
+        'http://www.thefamouspeople.com/engineers.php',
+        'http://www.thefamouspeople.com/fashion.php',
+        'http://www.thefamouspeople.com/film-theater-personalities.php',
+        'http://www.thefamouspeople.com/food-experts.php',
+        'http://www.thefamouspeople.com/intellectuals-academics.php',
+        'http://www.thefamouspeople.com/inventors-discoverers.php',
+        'http://www.thefamouspeople.com/lawyers-judges.php',
+        'http://www.thefamouspeople.com/leaders.php',
+        'http://www.thefamouspeople.com/media-personalities.php',
+        'http://www.thefamouspeople.com/musicians.php',
+        'http://www.thefamouspeople.com/painters.php',
+        'http://www.thefamouspeople.com/photographers.php',
+        'http://www.thefamouspeople.com/physicians.php',
+        'http://www.thefamouspeople.com/scientists.php',
+        'http://www.thefamouspeople.com/singers.php',
+        'http://www.thefamouspeople.com/sports-persons.php',
+        'http://www.thefamouspeople.com/writers.php',
+        'http://www.thefamouspeople.com/others.php',
+        'http://www.thefamouspeople.com/famous-people-by-zodiac-sign.php',
+        'http://www.thefamouspeople.com/famous-people-by-country.php',
+        'http://www.thefamouspeople.com/famous-people-by-birthday.php'
+    ]
     file_set = "12full"
-    
-    saved = 0; rep = 0
+
+    saved = 0
+    rep = 0
     already_saved = []
     append = already_saved.append
     for endpoint in parse_endpoints:
@@ -175,5 +186,5 @@ if __name__ == "__main__":
                 saved += 1
             else:
                 rep += 1
-        #break
+                # break
     print "\nsaved {0} people, {1} canceled".format(saved, rep)

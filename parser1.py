@@ -1,18 +1,25 @@
 # -*- coding: utf-8 -*-
-import requests, sys
-from bs4 import BeautifulSoup as bs
+import sys
+import json
 from datetime import datetime
+
+import requests
+from bs4 import BeautifulSoup as bs
+
 from saving import do_saving, format_exception
 from config import links
 
-everylink = [] # of loaded
+reload(sys)
+sys.setdefaultencoding("utf8")
+
+everylink = []  # of loaded
 endLists = []  # of new links
 
 
 # load all datas
 def getReady():
     global endLists, everylink
-    try: # open input file whith links and prepare target file for save
+    try:  # open input file whith links and prepare target file for save
         f = open("lists.txt", "r")
         data = f.read()
         f.close()
@@ -20,13 +27,13 @@ def getReady():
     except:
         print "File 'lists.txt' not found"
         sys.exit(2)
-    try: # open file for indexing system
+    try:  # open file for indexing system
         f = open("indexing.txt", "r")
         data = f.read()
         f.close()
         everylink = json.loads(data)
     except:
-        everylink = {"pages":[], "errors":[], "input":[]}
+        everylink = {"pages": [], "errors": [], "input": []}
         f = open("indexing.txt", "w")
         f.write(json.dumps(everylink))
         f.close()
@@ -38,9 +45,9 @@ def saveProcessData():
     f = open("indexing.txt", "w")
     f.write(json.dumps(everylink))
     f.close()
-        
 
-def main(): # fuck it. not flexible enough 
+
+def main():  # fuck it. not flexible enough
     t = datetime.now()
     getReady()
     print "Started on {0}, have {1} links to parse".format(t, len(endLists))
@@ -68,22 +75,22 @@ def parseEndLists(List):
     for link in List:
         if len(link) > 0:
             print link
-            if link.decode("utf8") not in everylink["input"]: 
-                r = requests.get(link, headers = headers)
+            if link.decode("utf8") not in everylink["input"]:
+                r = requests.get(link, headers=headers)
                 soup = bs(r.text)
                 hrefs = soup.find_all("a")
                 print "\n{0} hrefs on the page\n".format(len(hrefs))
                 j = 0
                 for hr in hrefs:
-                    sthr = str(hr)                    
+                    sthr = str(hr)
                     s0 = sthr.find("/wiki/")
-                    if s0 != -1:                
+                    if s0 != -1:
                         s1 = 0
                         for i in range(s0, len(sthr)):
                             if sthr[i] == '"':
                                 s1 = i
                                 break
-                        if s1 > s0: # the endpoint to Article page 
+                        if s1 > s0:  # the endpoint to Article page
                             sthr = endpoint + sthr[s0:s1]
                             if sthr not in everylink["pages"]:
                                 if parsePeople(sthr):
@@ -92,24 +99,24 @@ def parseEndLists(List):
                                         everylink["errors"].remove(sthr)
                                     print "-----", j, "-----"
                                     j += 1
-                                else: # that pages have no data
+                                else:  # that pages have no data
                                     everylink["errors"].append(sthr)
                                 saveProcessData()
                 print "saved data about {0} people total".format(j)
             everylink["input"].append(link)
-    # want return something ?
+            # want return something ?
 
-    
+
 # find out how to parse 1st paragraph
 def parsePeople(link):
     template = {}
-    headers = {"User-agent":"Mozilla/5.0"}
+    headers = {"User-agent": "Mozilla/5.0"}
     try:
-        r = requests.get(link, headers=headers, timeout = 10)
+        r = requests.get(link, headers=headers, timeout=10)
         soup = bs(r.text)
         allclasses = ["fn", "nickname", "bday", "dday deathdate"]
-        for aclass in allclasses:                
-            group = soup.find_all("span", class_ = aclass)
+        for aclass in allclasses:
+            group = soup.find_all("span", class_=aclass)
             if len(group) > 0:
                 f = str(group[0])
                 a0 = f.find("<")
@@ -117,9 +124,9 @@ def parsePeople(link):
                 while a0 != -1:
                     a0 = f.find("<")
                     a1 = f.find(">")
-                    t = f[a0:a1+1]
+                    t = f[a0:a1 + 1]
                     f = f.replace(t, "")
-                forsave = f.replace("\n", " ")                    
+                forsave = f.replace("\n", " ")
                 template[aclass] = forsave
         """
         # class = role / category , tag = td
@@ -151,18 +158,18 @@ def parsePeople(link):
         else:
             return None
     except Exception as ex:
-        print "(parsePeople, r)"#, format_exception(ex)
+        print "(parsePeople, r)"  # , format_exception(ex)
         return None
 
 
 def parseTables(page_link):
     template = []
     append = template.append
-    headers = {"User-agent":"Mozilla/5.0"}
+    headers = {"User-agent": "Mozilla/5.0"}
     try:
-        r = requests.get(page_link, headers = headers, timeout = 10)
+        r = requests.get(page_link, headers=headers, timeout=10)
         soup = bs(r.text)
-        all_tables = soup.find_all("table", class_ = "wikitable")
+        all_tables = soup.find_all("table", class_="wikitable")
         print "\n---found {0} tables on the page---\n".format(len(all_tables))
         for table in all_tables:
             sub_soup = bs(str(table))
@@ -174,9 +181,9 @@ def parseTables(page_link):
                 buf = str(td).replace("\n", " ").replace("&amp;", "&")
                 if "flagicon" in buf:
                     a = buf.find('href="')
-                    buf = buf[a+1:]
+                    buf = buf[a + 1:]
                     a = buf.find('href="') + len('href="')
-                    buf = buf[a+1:]
+                    buf = buf[a + 1:]
                     b = buf.find('"')
                     href = buf[:b]
                     sub_pend(href)
@@ -184,21 +191,21 @@ def parseTables(page_link):
                     while buf.find("<") != -1 and buf.find(">") != -1:
                         a = buf.find("<")
                         b = buf.find(">")
-                        buf = buf[:a] + buf[b+1:] 
+                        buf = buf[:a] + buf[b + 1:]
                     sub_pend(buf)
-            append(sub_res) # whole current table
+            append(sub_res)  # whole current table
     except Exception as ex:
         print "(parseTables, r)", format_exception(ex)
-        print "--"*25
+        print "--" * 25
     return template
 
 
 def parseOtherSite(page_link):
     template = []
     append = template.append
-    headers = {"User-agent":"Mozilla/5.0"}
+    headers = {"User-agent": "Mozilla/5.0"}
     try:
-        r = requests.get(page_link, headers = headers, timeout = 10)
+        r = requests.get(page_link, headers=headers, timeout=10)
         soup = bs(r.text)
         all_lists = soup.find_all("li", class_="")
         print "\n---found {0} list items on the page---\n".format(len(all_lists))
@@ -206,34 +213,33 @@ def parseOtherSite(page_link):
             buf = str(item)
             sub_res = []
             sub_pend = sub_res.append
-            
+
             a = buf.find('href="')
             buf = buf[a:]
             a = buf.find('href="') + len('href="')
             buf = buf[a:]
             b = buf.find('"')
             href = buf[:b]
-            buf = buf[b+2:]
+            buf = buf[b + 2:]
             sub_pend(href)
-            
+
             while buf.find("<") != -1 and buf.find(">") != -1:
                 a = buf.find("<")
                 b = buf.find(">")
-                buf = buf[:a] + buf[b+1:]
+                buf = buf[:a] + buf[b + 1:]
             sub_pend(buf)
-            
-            append(sub_res) # whole current table
+
+            append(sub_res)  # whole current table
     except Exception as ex:
         print "(parseTables, r)", format_exception(ex)
-        print "--"*25
+        print "--" * 25
     return template
-    
 
-           
+
 if __name__ == "__main__":
-    file_set = "8" #7a
+    file_set = "8"  # 7a
     endpoint = "http://en.wikipedia.org/"
-    
+
     already_saved = []
     append = already_saved.append
     for link in links[file_set]:
@@ -255,8 +261,3 @@ if __name__ == "__main__":
                     i += 1
                 i += 1
     print "\nDone...\n"
-
-
-
-
-    

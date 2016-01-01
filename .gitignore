@@ -74,3 +74,5 @@ _trash/indexing 1.txt
 output/output7a.csv
 output/output8.csv
 *.csv
+.idea
+venv

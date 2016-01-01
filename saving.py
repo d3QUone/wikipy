@@ -1,9 +1,10 @@
-import traceback, sys
+import sys
+import traceback
 
 
-# tracking the error in the caugth exception
 def format_exception(e):
-    print str(e) + " - given into traceback"
+    """Track the error in the caught exception"""
+    print "{} - given into traceback".format(e)
     exception_list = traceback.format_stack()
     exception_list = exception_list[:-2]
     exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
@@ -14,8 +15,8 @@ def format_exception(e):
     return exception_str + "\n" + "-"*15
 
 
-# prepare a table row for .CSV here
-def generateCSVstring(dic, utf8 = False):
+def generateCSVstring(dic, utf8=False):
+    """Prepare a table row for .CSV"""
     st = ""; br = "; "; em = " "
     try:
         st += dic["fn"].encode("utf8") + br
@@ -49,14 +50,9 @@ def generateCSVstring(dic, utf8 = False):
     return st + "\n"
 
 
-# actually do a save
-def do_saving(dict_to_save, file_set, log = False):
-    try: 
-        ofile = open("output/output{0}.csv".format(file_set), "a")
-    except: 
-        ofile = open("output/output{0}.csv".format(file_set), "w")
+def do_saving(dict_to_save, file_set, log=False):
     lis = generateCSVstring(dict_to_save, utf8 = False)
-    ofile.write(lis)
-    ofile.close()
+    with open("output/output{0}.csv".format(file_set), "a") as ofile:
+        ofile.write(lis)
     if log:
         print "saved one"
